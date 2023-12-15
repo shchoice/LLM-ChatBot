@@ -24,11 +24,11 @@ class ChatBotApp:
 
     def initialize_session_state(self):
         # Initialise session state variables
-        if 'generated' not in st.session_state:
-            st.session_state['generated'] = []
-        if 'past' not in st.session_state:
-            st.session_state['past'] = []
-        if 'messages' not in st.session_state:
+        if 'chatbot_message' not in st.session_state:     # chatbot_message
+            st.session_state['chatbot_message'] = []
+        if 'user_message' not in st.session_state:  # user_message
+            st.session_state['user_message'] = []
+        if 'messages' not in st.session_state:      # {role, content}
             st.session_state['messages'] = []
         if 'model_name' not in st.session_state:
             st.session_state['model_name'] = []
@@ -71,9 +71,15 @@ class ChatBotApp:
         if clear_button:
             self.reset_session_state()
 
+        st.sidebar.markdown('<hr>', unsafe_allow_html=True)
+        st.sidebar.title('Chat Rooms')
+        with st.sidebar.form("new_room"):
+            new_room = st.text_input("Create a new room")
+            create_room_button = st.form_submit_button("Create Room")
+
     def reset_session_state(self):
-        st.session_state['generated'] = []
-        st.session_state['past'] = []
+        st.session_state['chatbot_message'] = []
+        st.session_state['user_message'] = []
         st.session_state['messages'] = []
         st.session_state['model_name'] = []
         st.session_state['total_tokens'] = []
@@ -87,20 +93,20 @@ class ChatBotApp:
 
     def main_chat_window(self):
         self.initialize_session_state()
-        if st.session_state['generated']:
+        if st.session_state['chatbot_message']:
             self.display_chat_history()
-        if user_input := st.chat_input(""):
-            if user_input:
-                self.handle_user_input(user_input)
+        if user_message := st.chat_input(""):
+            if user_message:
+                self.handle_user_message(user_message)
 
             with st.chat_message('user'):
-                user_input = st.session_state["past"][-1]
-                st.markdown(user_input)
+                user_message = st.session_state["user_message"][-1]
+                st.markdown(user_message)
 
             with st.chat_message('assistant'):
                 message_placeholder = st.empty()
                 full_response = ""
-                for lines in st.session_state['generated'][-1].split('\n'):
+                for lines in st.session_state['chatbot_message'][-1].split('\n'):
                     for chunk in lines.split():
                         full_response += chunk + " "
                         time.sleep(0.05)
@@ -111,10 +117,10 @@ class ChatBotApp:
                     f"Cost: ${st.session_state['cost'][-1]:.5f}"
                 )
 
-    def handle_user_input(self, user_input):
-        chatbot_message, total_tokens, prompt_tokens, completion_tokens = self.generate_response(user_input)
-        st.session_state['past'].append(user_input)
-        st.session_state['generated'].append(chatbot_message)
+    def handle_user_message(self, user_message):
+        chatbot_message, total_tokens, prompt_tokens, completion_tokens = self.generate_response(user_message)
+        st.session_state['user_message'].append(user_message)
+        st.session_state['chatbot_message'].append(chatbot_message)
         st.session_state['total_tokens'].append(total_tokens)
         st.session_state['model_name'].append(self.model_name)
 
@@ -124,15 +130,15 @@ class ChatBotApp:
         st.session_state['total_cost'] += cost
         self.update_total_cost()
 
-        # # For Debug
-        # print(st.session_state['generated'])
-        # print(st.session_state['past'])
-        # print(st.session_state['messages'])
-        # print(st.session_state['model_name'])
-        # print(st.session_state['total_tokens'])
-        # print(st.session_state['cost'])
-        # print(st.session_state['total_cost'])
-        # print()
+        # For Debug
+        print(st.session_state['chatbot_message'])
+        print(st.session_state['user_message'])
+        print(st.session_state['messages'])
+        print(st.session_state['model_name'])
+        print(st.session_state['total_tokens'])
+        print(st.session_state['cost'])
+        print(st.session_state['total_cost'])
+        print()
 
     def generate_response(self, prompt):
         st.session_state['messages'].append({"role": "user", "content": prompt})
