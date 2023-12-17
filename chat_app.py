@@ -50,7 +50,7 @@ class ChatBotApp:
         st.set_page_config(page_title="Seohwan Choi's ChatGPT", page_icon=":robot_face:")
         st.markdown("<h1 style='text-align: center;'>Seohwan Choi's ChatGPT🤩</h1>", unsafe_allow_html=True)
         is_first: bool = self.sidebar_setup()
-        if not is_first:
+        if not is_first and self.room_name:
             self.main_chat_window()
 
     def sidebar_setup(self):
@@ -103,6 +103,10 @@ class ChatBotApp:
             if clear_button:
                 self.reset_session_state()
 
+            delete_button = st.sidebar.button("대화방 삭제")
+            if delete_button:
+                self.delete_session_state()
+
         sidebar_chat_settings_setup()
         is_first: bool = sidebar_chat_rooms_setup()
         if is_first is False:
@@ -122,12 +126,20 @@ class ChatBotApp:
 
         self.update_total_cost()
 
+    def delete_session_state(self):
+        room_name = self.room_name
+        del st.session_state['chat_rooms'][room_name]
+        self.room_name = None
+
     def update_total_cost(self):
         room_name = self.room_name
         self.counter_placeholder.write(f"Total costs: ${st.session_state['chat_rooms'][room_name]['total_cost']:.5f}")
 
     def main_chat_window(self):
         room_name = self.room_name
+
+        if room_name:
+            st.subheader(f"대화방: {room_name}")
         if st.session_state['chat_rooms'][room_name]['chatbot_message']:
             self.display_chat_history()
         if user_message := st.chat_input(""):
